@@ -63,6 +63,19 @@ defmodule Postgrex.Extensions.Timestamp do
     split(microsecs)
   end
 
+  def erlang_to_naive_datetime!({{year, month, day}, {hour, minute, second}}, microseconds) do
+    %NaiveDateTime{
+      calendar: Calendar.ISO,
+      year: year,
+      month: month,
+      day: day,
+      hour: hour,
+      minute: minute,
+      second: second,
+      microsecond: microseconds
+    }
+  end
+
   defp split(microsecs) when microsecs < 0 and rem(microsecs, 1_000_000) != 0 do
     secs = div(microsecs, 1_000_000) - 1
     microsecs = 1_000_000 + rem(microsecs, 1_000_000)
@@ -71,12 +84,12 @@ defmodule Postgrex.Extensions.Timestamp do
 
   defp split(microsecs) do
     secs = div(microsecs, 1_000_000)
-    microsecs = rem(microsecs, 1_000_000)
-    split(secs, microsecs)
+    split(secs, 0)
   end
 
   defp split(secs, microsecs) do
-    NaiveDateTime.from_gregorian_seconds(secs + @gs_epoch, {microsecs, 6})
+    :calendar.gregorian_seconds_to_datetime(secs + @gs_epoch)
+    |> erlang_to_naive_datetime!({microsecs, 6})
   end
 
   defp raise_infinity(type) do
